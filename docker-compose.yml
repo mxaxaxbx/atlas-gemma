@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    ports:
+      - "8080:11434"  # Map host 8080 to container 11434
+    volumes:
+      - .:/app
+    environment:
+      OLLAMA_HOST: "0.0.0.0"
+      OLLAMA_ORIGINS: "*"
