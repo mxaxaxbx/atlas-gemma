@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.local
     ports:
-      - "8080:11434"  # Map host 8080 to container 11434
+      - "8080:8080"  # Map host 8080 to container 11434
     volumes:
       - .:/app
     environment:
