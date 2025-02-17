@@ -34,15 +34,19 @@ jobs:
   
 
       -
-        name: Build and Push Image
+        name: Build Image
         run: |
-          export IMAGE_NAME=us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_DEV }}/digi/atlas-gemma:${{ github.sha }}
-          DOCKER_BUILDKIT=1 docker build \
-            --network=host \
-            --cache-from=type=registry,ref=${IMAGE_NAME} \
-            --cache-to=type=inline \
-            -t ${IMAGE_NAME} .
-          docker push ${IMAGE_NAME}
+          DOCKER_BUILDKIT=1 docker build -f Dockerfile.dev -t atlas-gemma:${{ github.sha }} . --network=host --cache-from=type=registry,ref=us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_DEV }}/digi/atlas-gemma:latest
+
+      -
+        name: Tag Image
+        run: |
+          docker tag atlas-gemma:${{ github.sha }} us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_DEV }}/digi/atlas-gemma:${{ github.sha }}
+      
+      -
+        name: Push Image
+        run: |
+          docker push us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_DEV }}/digi/atlas-gemma:${{ github.sha }}
 
       -
         name: Deploy to Google Cloud Run
