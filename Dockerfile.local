@@ -1,4 +1,12 @@
-# Base image for the build
+# --- Stage 1: Pull the model ---
+FROM ollama/ollama:latest AS builder
+
+# Start Ollama in the background
+RUN ollama serve & \
+    sleep 2 && \
+    ollama pull gemma:2b
+
+# --- Stage 2: Final Image ---
 FROM ollama/ollama:latest
 
 # Install nginx and curl
@@ -10,6 +18,9 @@ COPY nginx.conf /etc/nginx/nginx.conf
 WORKDIR /app
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# Copy the preloaded model from the builder stage
+COPY --from=builder /root/.ollama /root/.ollama
 
 ENV OLLAMA_HOST=0.0.0.0
 ENV OLLAMA_ORIGINS="*"

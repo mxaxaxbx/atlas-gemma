@@ -11,8 +11,5 @@ until curl -s http://localhost:11434/api/health; do
   sleep 2
 done
 
-# Pull the model
-ollama pull gemma:2b
-
 # Keep the container running
 wait
