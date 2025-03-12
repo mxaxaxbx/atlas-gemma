@@ -1,0 +1,72 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout repository
+        uses: actions/checkout@v2
+
+      -
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY_QA }}
+          project_id: ${{ secrets.GCP_PROJECT_ID_QA }}
+      
+      -
+        name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v1'
+
+      -
+        name: Authenticate Docker with GCP
+        run: gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
+
+      -
+        name: Download beta components
+        run: gcloud components install beta --quiet
+  
+
+      -
+        name: Build Image
+        run: |
+          DOCKER_BUILDKIT=1 docker build -f Dockerfile.qa -t atlas-gemma:${{ github.sha }} . --network=host --cache-from=type=registry,ref=us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_QA }}/digi/atlas-gemma:latest
+
+      -
+        name: Tag Image
+        run: |
+          docker tag atlas-gemma:${{ github.sha }} us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_QA }}/digi/atlas-gemma:${{ github.sha }}
+      
+      -
+        name: Push Image
+        run: |
+          docker push us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_QA }}/digi/atlas-gemma:${{ github.sha }}
+
+      -
+        name: Deploy to Google Cloud Run
+        run: |
+          gcloud beta run deploy atlas-gemma \
+            --concurrency 20 \
+            --min-instances 0 \
+            --max-instances 3 \
+            --timeout 300s \
+            --gpu 1 \
+            --memory 16Gi \
+            --image us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_QA }}/digi/atlas-gemma:${{ github.sha }} \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --service-account ${{ secrets.GCP_SA_EMAIL_QA }}
+
+      -
+        name: Remove Image from Artifact Registry
+        run: |
+          gcloud container images delete \
+            us-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID_QA }}/digi/atlas-gemma:${{ github.sha }} \
+            --force-delete-tags \
+            --quiet
