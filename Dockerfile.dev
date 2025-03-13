@@ -4,7 +4,7 @@ FROM ollama/ollama:latest AS builder
 # Start Ollama in the background
 RUN ollama serve & \
     sleep 2 && \
-    ollama pull gemma:2b
+    ollama pull gemma2:27b
 
 # --- Stage 2: Final Image ---
 FROM ollama/ollama:latest
